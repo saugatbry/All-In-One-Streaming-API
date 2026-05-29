@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
     })
   } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to get stream' },
-      { status: 500 }
+      { success: true, stream: null, sources: [], error: error.message || 'Failed to get stream' },
+      { status: 200 }
     )
   }
 }

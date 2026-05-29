@@ -28,7 +28,7 @@ export async function getWatch(data: any): Promise<StreamResult[]> {
       const { resolveExtractors } = await import('../extractors')
       return resolveExtractors(urls)
     }
-    throw new Error('No stream data available')
+    return []
   }
 
   const results: StreamResult[] = []
@@ -36,7 +36,8 @@ export async function getWatch(data: any): Promise<StreamResult[]> {
 
   for (const item of links) {
     try {
-      const m3u8Content = await getM3u8(payload.playerDomain, payload.tokenKey, item.file!)
+      if (!item?.file) continue
+      const m3u8Content = await getM3u8(payload.playerDomain, payload.tokenKey, item.file)
       const urls = m3u8Content.match(/https?:\/\/[^\s]+/g) || []
       urls.forEach((u: string) => {
         results.push({

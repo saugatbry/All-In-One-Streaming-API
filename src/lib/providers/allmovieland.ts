@@ -48,7 +48,6 @@ async function getM3u8(playerDomain: string, tokenKey: string, file: string): Pr
 }
 
 export async function mainPage(page: number = 1) {
-  const cookies = await ensureSession()
   const categories = [
     { name: 'Movies', url: `${baseUrl}/films/` },
     { name: 'Bollywood Movies', url: `${baseUrl}/bollywood/` },
@@ -59,7 +58,7 @@ export async function mainPage(page: number = 1) {
   const results: any[] = []
   for (const cat of categories) {
     const url = page === 1 ? cat.url : `${cat.url}/page/${page}/`
-    const html = await fetchText(url, { cookies })
+    const html = await fetchText(url)
     const $ = cheerio.load(html)
     const items = $('article.short-mid').map((_, el) => {
       const $el = $(el)
@@ -76,7 +75,6 @@ export async function mainPage(page: number = 1) {
 }
 
 export async function search(query: string, page: number = 1) {
-  const cookies = await ensureSession()
   const html = await querySearchApi(query)
   const $ = cheerio.load(html)
   return $('article.short-mid').map((_, el) => {
@@ -91,8 +89,7 @@ export async function search(query: string, page: number = 1) {
 }
 
 export async function info(url: string) {
-  const cookies = await ensureSession()
-  const html = await fetchText(url, { cookies })
+  const html = await fetchText(url)
   const $ = cheerio.load(html)
   const title = $('h1.fs__title').text().trim()
   const poster = fixUrlNull($('img.fs__poster-img').attr('src'), baseUrl)

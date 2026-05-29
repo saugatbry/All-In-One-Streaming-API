@@ -9,6 +9,5 @@ export function parseArticle($el: any, $: cheerio.CheerioAPI, providerName: stri
     posterUrl = $($el).find('div figure img').attr('data-lazy-src')
   }
   if (!href || !title) return null
-  const media = JSON.stringify({ url: href, poster: posterUrl || null, mediaType: 0 })
-  return { provider: providerName, id: media, title, type: 'anime', poster: posterUrl || undefined }
+  return { provider: providerName, id: href, title, type: 'anime', poster: posterUrl || undefined }
 }

@@ -1,9 +1,10 @@
 import { WatchResponse, StreamSource } from '@/core/types'
 import { hdhub4uRedirect, hubdriveExtract, hubcloudExtract, genericExtract, resolveExtractors } from '@/core/extractors'
+import { ub64 } from '@/core/utils/helpers'
 
 export async function watch(providerName: string, type: string, episodeId: string): Promise<WatchResponse> {
   let urls: string[]
-  try { urls = JSON.parse(episodeId) } catch {
+  try { urls = JSON.parse(ub64(episodeId)) } catch {
     return { status: 'error', provider: providerName, type: type as any, streams: [], subtitles: [], error: 'Invalid episode data' }
   }
   if (!urls?.length) {

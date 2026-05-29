@@ -22,6 +22,12 @@ export function base64Decode(str: string): string {
   return Buffer.from(str, 'base64').toString('utf-8')
 }
 
+export function b64(str: string): string {
+  return Buffer.from(str, 'utf-8').toString('base64')
+}
+
+export const ub64 = base64Decode
+
 export function rot13(str: string): string {
   return str.replace(/[a-zA-Z]/g, c => {
     const code = c.charCodeAt(0)

@@ -3,6 +3,7 @@ import { http } from '@/core/utils/request'
 import { InfoResponse, EpisodeInfo } from '@/core/types'
 import { getBaseHeaders, getDomainUrl } from './headers'
 import { hdhub4uRedirect } from '@/core/extractors'
+import { b64 } from '@/core/utils/helpers'
 
 const TMDB_KEY = '1865f43a0549ca50d341dd9ab8b29f49'
 const TMDB_BASE = 'https://image.tmdb.org/t/p/original'
@@ -96,7 +97,7 @@ export async function info(providerName: string, url: string): Promise<InfoRespo
       const href = $(el).attr('href') || ''
       if (/(hdstream4u|hubstream)/i.test(href) && !links.includes(href)) links.push(href)
     })
-    if (links.length) result.episodes = [{ name: 'Movie', season: 1, episode: 1, id: JSON.stringify(links) }]
+    if (links.length) result.episodes = [{ name: 'Movie', season: 1, episode: 1, id: b64(JSON.stringify(links)) }]
   } else {
     const epLinksMap = new Map<number, string[]>()
     const episodeRegex = /EPISODE\s*(\d+)/i
@@ -165,7 +166,7 @@ export async function info(providerName: string, url: string): Promise<InfoRespo
         name: `Episode ${epNum}`,
         season: seasonNumber || 1,
         episode: epNum,
-        id: JSON.stringify(deduplicated),
+        id: b64(JSON.stringify(deduplicated)),
       })
     }
     if (episodes.length) result.episodes = episodes

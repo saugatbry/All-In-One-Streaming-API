@@ -1,9 +1,10 @@
 import { WatchResponse, StreamSource } from '@/core/types'
 import { resolveExtractors } from '@/core/extractors'
+import { ub64 } from '@/core/utils/helpers'
 
 export async function watch(providerName: string, type: string, episodeId: string): Promise<WatchResponse> {
   let links: { name: string; url: string }[]
-  try { links = JSON.parse(episodeId) } catch {
+  try { links = JSON.parse(ub64(episodeId)) } catch {
     return { status: 'error', provider: providerName, type: type as any, streams: [], subtitles: [], error: 'Invalid episode data' }
   }
   if (!links?.length) {

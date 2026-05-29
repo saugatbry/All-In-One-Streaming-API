@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio'
 import { http } from '@/core/utils/request'
 import { InfoResponse, EpisodeInfo } from '@/core/types'
 import { BASE_URL, getBaseHeaders } from './headers'
+import { b64 } from '@/core/utils/helpers'
 
 export async function info(providerName: string, url: string): Promise<InfoResponse> {
   const html = await http.get(url, { headers: getBaseHeaders() })
@@ -49,7 +50,7 @@ export async function info(providerName: string, url: string): Promise<InfoRespo
       })
 
       if (links.length) {
-        episodes.push({ name: epNum ? `Episode ${epNum}` : epText, season: 1, episode: epNum, id: JSON.stringify(links) })
+        episodes.push({ name: epNum ? `Episode ${epNum}` : epText, season: 1, episode: epNum, id: b64(JSON.stringify(links)) })
       }
     })
 
@@ -66,7 +67,7 @@ export async function info(providerName: string, url: string): Promise<InfoRespo
       })
 
       if (links.length) {
-        episodes.push({ name: epNum ? `Episode ${epNum}` : epText, season: 1, episode: epNum, id: JSON.stringify(links) })
+        episodes.push({ name: epNum ? `Episode ${epNum}` : epText, season: 1, episode: epNum, id: b64(JSON.stringify(links)) })
       }
     })
 
@@ -116,6 +117,6 @@ export async function info(providerName: string, url: string): Promise<InfoRespo
     description, genres: genres.length ? genres : undefined,
     rating: rating ? parseFloat(rating) : undefined,
     poster: backgroundposter, banner: backgroundposter,
-    episodes: links.length ? [{ name: 'Movie', season: 1, episode: 1, id: JSON.stringify(links) }] : undefined,
+    episodes: links.length ? [{ name: 'Movie', season: 1, episode: 1, id: b64(JSON.stringify(links)) }] : undefined,
   }
 }

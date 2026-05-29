@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio'
 import { http } from '@/core/utils/request'
 import { InfoResponse, EpisodeInfo } from '@/core/types'
 import { BASE_URL, getBaseHeaders } from './headers'
+import { b64 } from '@/core/utils/helpers'
 
 export async function info(providerName: string, url: string): Promise<InfoResponse> {
   const html = await http.get(url, { headers: getBaseHeaders() })
@@ -18,8 +19,7 @@ export async function info(providerName: string, url: string): Promise<InfoRespo
   const hasSeasons = $('ul.seasons-lst li').length > 0
 
   if (!hasSeasons) {
-    const media = JSON.stringify({ url, mediaType: 1 })
-    return { provider: providerName, id: media, title, type: 'movie', poster, description: plot, year }
+    return { provider: providerName, id: url, title, type: 'movie', poster, description: plot, year }
   }
 
   const episodes: EpisodeInfo[] = []
@@ -31,8 +31,7 @@ export async function info(providerName: string, url: string): Promise<InfoRespo
     const seasonText = $li.find('h3.title > span').text()
     const season = parseInt(seasonText.split('S')[1]?.split('-')[0]) || undefined
     if (href) {
-      const media = JSON.stringify({ url: href, poster: epPoster, mediaType: 2 })
-      episodes.push({ name, season, episode: episodes.length + 1, id: media, thumbnail: epPoster })
+      episodes.push({ name, season, episode: episodes.length + 1, id: b64(JSON.stringify({ url: href, mediaType: 2 })), thumbnail: epPoster })
     }
   })
 

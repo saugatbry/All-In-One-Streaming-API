@@ -3,10 +3,11 @@ import { http } from '@/core/utils/request'
 import { WatchResponse, StreamSource } from '@/core/types'
 import { BASE_URL, getBaseHeaders } from './headers'
 import { genericExtract, resolveExtractors } from '@/core/extractors'
+import { ub64 } from '@/core/utils/helpers'
 
 export async function watch(providerName: string, type: string, episodeId: string): Promise<WatchResponse> {
   let media: { url: string; mediaType?: number }
-  try { media = JSON.parse(episodeId) } catch {
+  try { media = JSON.parse(ub64(episodeId)) } catch {
     return { status: 'error', provider: providerName, type: type as any, streams: [], subtitles: [], error: 'Invalid episode data' }
   }
 

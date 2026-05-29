@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 import { fetchText, fetchDocument, fixUrl, fixUrlNull, getBaseUrl } from '../fetcher'
+import { resolveExtractors, StreamResult } from '../extractors'
 
 export const id = 'allmovieland'
 export const name = 'AllMovieLand'
@@ -166,9 +167,13 @@ export async function info(url: string) {
 
 export async function streams(data: any) {
   const payload = data.streamData || data
-  if (!payload?.items && !payload?.links) return []
+  if (!payload?.items && !payload?.links) {
+    const extUrls = Array.isArray(data) ? data : (data.streamData || [data]).filter(Boolean)
+    if (typeof extUrls === 'string') return resolveExtractors([extUrls])
+    return resolveExtractors(extUrls)
+  }
   const links = payload.items || payload.links || []
-  const results: any[] = []
+  const results: StreamResult[] = []
   for (const item of links) {
     try {
       const m3u8Content = await getM3u8(payload.playerDomain, payload.tokenKey, item.file)

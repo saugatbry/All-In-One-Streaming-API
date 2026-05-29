@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 import { fetchText, fetchJson, fixUrl, fixUrlNull } from '../fetcher'
+import { resolveExtractors } from '../extractors'
 
 export const id = 'uhdmovies'
 export const name = 'UHDmovies'
@@ -171,24 +172,8 @@ export async function info(url: string) {
 
 export async function streams(data: any) {
   const sources = Array.isArray(data) ? data : (data.streamData || [])
-  if (typeof data === 'string' && data.startsWith('http')) {
-    // Single URL
-    let finalUrl = data.includes('unblockedgames') ? data : data
-    return [{ url: finalUrl, type: 'extractor', name: 'UHDmovies' }]
-  }
-  if (typeof sources === 'string' && sources.startsWith('http')) {
-    return [{ url: sources, type: 'extractor', name: 'UHDmovies' }]
-  }
-  const results: any[] = []
-  for (const src of sources) {
-    const link = src.sourceLink || src
-    if (link) {
-      results.push({
-        name: src.sourceName || 'UHD',
-        url: link,
-        type: 'extractor',
-      })
-    }
-  }
-  return results
+  if (typeof sources === 'string') return resolveExtractors([sources])
+  const urls = sources.map((s: any) => (typeof s === 'string' ? s : (s.sourceLink || s.url))).filter(Boolean)
+  if (urls.length === 0) return []
+  return resolveExtractors(urls)
 }

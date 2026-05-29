@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 import { fetchText, fetchDocument, fixUrl, fixUrlNull } from '../fetcher'
+import { resolveExtractors } from '../extractors'
 
 export const id = 'multimovies'
 export const name = 'MultiMovies'
@@ -125,7 +126,7 @@ export async function streams(data: any) {
   if (!pageUrl) return []
   const html = await fetchText(pageUrl)
   const $ = cheerio.load(html)
-  const results: any[] = []
+  const links: string[] = []
   const items: { post: string; nume: string; type: string }[] = []
   $('ul#playeroptionsul li').each((_, li) => {
     const $li = $(li)
@@ -156,18 +157,9 @@ export async function streams(data: any) {
         link = resp.split('"')[1]?.trim()
       }
       if (link && !link.includes('youtube')) {
-        if (link.includes('deaddrive.xyz')) {
-          const dlHtml = await fetchText(link)
-          const $dl = cheerio.load(dlHtml)
-          $dl('ul.list-server-items > li').each((_, li) => {
-            const server = $dl(li).attr('data-video')
-            if (server) results.push({ url: server, type: 'extractor', referer: baseUrl })
-          })
-        } else {
-          results.push({ url: link, type: 'extractor', referer: baseUrl })
-        }
+        links.push(link)
       }
     } catch {}
   }
-  return results
+  return resolveExtractors(links)
 }

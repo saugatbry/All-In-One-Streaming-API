@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 import { fetchText, fetchDocument, fixUrl, fixUrlNull } from '../fetcher'
+import { resolveExtractors } from '../extractors'
 
 export const id = 'animedekho'
 export const name = 'Anime Dekho'
@@ -87,32 +88,44 @@ export async function info(url: string) {
 }
 
 export async function streams(data: any) {
-  const mediaUrl = data.url
+  const mediaUrl = data?.url || data?.streamData?.url || data
+  if (!mediaUrl) return []
   const results: any[] = []
 
   const headers = { Cookie: 'toronites_server=vidstream' }
-  const html1 = await fetchText(mediaUrl, { headers })
-  const $1 = cheerio.load(html1)
-  $1('iframe.serversel[src]').each((_, el) => {
-    const src = $1(el).attr('src')
-    if (src) results.push({ url: src, type: 'iframe' })
-  })
-
-  const bodyClass = await fetchText(mediaUrl)
-  const termMatch = bodyClass.match(/(?:term|postid)-(\d+)/)
-  const term = termMatch?.[1]
-  if (term) {
-    for (let i = 0; i <= 10; i++) {
-      try {
-        const iframeHtml = await fetchText(`${baseUrl}/?trdekho=${i}&trid=${term}&trtype=${data.mediaType || 2}`)
-        const $ = cheerio.load(iframeHtml)
-        const iframeSrc = $('iframe').attr('src')
-        if (iframeSrc) {
-          results.push({ url: iframeSrc, type: 'extractor' })
-          break
-        }
-      } catch {}
+  try {
+    const html1 = await fetchText(mediaUrl, { headers })
+    const $1 = cheerio.load(html1)
+    const iframeSrcs: string[] = []
+    $1('iframe.serversel[src]').each((_, el) => {
+      const src = $1(el).attr('src')
+      if (src) iframeSrcs.push(src)
+    })
+    if (iframeSrcs.length > 0) {
+      const ex = await resolveExtractors(iframeSrcs)
+      results.push(...ex)
     }
-  }
-  return results
+  } catch {}
+
+  try {
+    const bodyClass = await fetchText(mediaUrl)
+    const termMatch = bodyClass.match(/(?:term|postid)-(\d+)/)
+    const term = termMatch?.[1]
+    if (term) {
+      for (let i = 0; i <= 10; i++) {
+        try {
+          const iframeHtml = await fetchText(`${baseUrl}/?trdekho=${i}&trid=${term}&trtype=${data.mediaType || 2}`)
+          const $ = cheerio.load(iframeHtml)
+          const iframeSrc = $('iframe').attr('src')
+          if (iframeSrc) {
+            const ex = await resolveExtractors([iframeSrc])
+            results.push(...ex)
+            break
+          }
+        } catch {}
+      }
+    }
+  } catch {}
+
+  return results.length > 0 ? results : [{ url: mediaUrl, type: 'extractor' }]
 }

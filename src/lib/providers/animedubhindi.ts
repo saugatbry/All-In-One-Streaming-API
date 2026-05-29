@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 import { fetchText, fixUrl, fixUrlNull } from '../fetcher'
+import { resolveExtractors } from '../extractors'
 
 export const id = 'animedubhindi'
 export const name = 'AnimeDubHindi'
@@ -146,9 +147,7 @@ export async function info(url: string) {
 
 export async function streams(data: any) {
   const links = Array.isArray(data) ? data : (data.streamData || [])
-  return links.map((item: any) => ({
-    name: item.name || 'Link',
-    url: item.url,
-    type: 'extractor',
-  }))
+  const urls = links.map((item: any) => (typeof item === 'string' ? item : item.url)).filter(Boolean)
+  if (urls.length === 0) return []
+  return resolveExtractors(urls)
 }

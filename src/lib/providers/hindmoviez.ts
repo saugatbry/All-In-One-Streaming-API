@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 import { fetchText, fetchJson, fixUrl, fixUrlNull } from '../fetcher'
+import { resolveExtractors } from '../extractors'
 
 export const id = 'hindmoviez'
 export const name = 'Hindmoviez'
@@ -180,42 +181,7 @@ export async function info(url: string) {
 
 export async function streams(data: any) {
   const links: string[] = Array.isArray(data) ? data : (data.streamData || [data])
-  const results: any[] = []
-  for (const url of links) {
-    if (!url) continue
-    try {
-      const html = await fetchText(url)
-      const $ = cheerio.load(html)
-      let name = ''
-      let size = ''
-      $('div.container p').each((_, el) => {
-        const text = $(el).text().trim()
-        if (text.startsWith('Name:')) name = text.replace('Name:', '').trim()
-        if (text.startsWith('Size:')) size = text.replace('Size:', '').trim()
-      })
-      const btnUrls: string[] = []
-      $('a.btn').each((_, el) => {
-        const href = $(el).attr('href')
-        if (href) btnUrls.push(href)
-      })
-      for (const btnUrl of btnUrls) {
-        try {
-          const btnHtml = await fetchText(btnUrl)
-          const $$ = cheerio.load(btnHtml)
-          $$('a.button').each((_, a) => {
-            const href = $$(a).attr('href')
-            if (href) {
-              results.push({ name: `${name} [${size}]`.trim(), url: href, quality: undefined, type: 'extractor', referer: btnUrl })
-            }
-          })
-        } catch {}
-      }
-      if (results.length === 0) {
-        results.push({ name: url, url, type: 'extractor' })
-      }
-    } catch {
-      results.push({ name: url, url, type: 'extractor' })
-    }
-  }
-  return results
+  const urls = links.filter(Boolean)
+  if (urls.length === 0) return []
+  return resolveExtractors(urls)
 }

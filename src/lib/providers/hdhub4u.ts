@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 import { fetchText, fetchJson, fixUrl, fixUrlNull } from '../fetcher'
+import { resolveExtractors, hdhub4uRedirectExtract } from '../extractors'
 
 export const id = 'hdhub4u'
 export const name = 'HDHub4u'
@@ -208,12 +209,8 @@ export async function info(url: string) {
 
 export async function streams(data: any) {
   const links = Array.isArray(data) ? data : (data.streamData || [])
-  return links.map((item: any) => {
-    const url = typeof item === 'string' ? item : item.url
-    return {
-      name: url.includes('Hubdrive') ? 'Hubdrive' : 'Link',
-      url,
-      type: 'extractor',
-    }
-  })
+  const urls = links.map((item: any) => (typeof item === 'string' ? item : item.url)).filter(Boolean)
+  if (urls.length === 0) return []
+  const decoded = await Promise.all(urls.map((u: string) => hdhub4uRedirectExtract(u)))
+  return resolveExtractors(decoded)
 }

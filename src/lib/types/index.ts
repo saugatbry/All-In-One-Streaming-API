@@ -1,17 +1,19 @@
-export interface ProviderInfo {
-  id: string
-  name: string
-  lang: string
-  type: string
-  baseUrl: string
-}
-
 export interface SearchResult {
+  id?: string
   title: string
   url: string
   posterUrl?: string
-  type: 'movie' | 'series' | 'live' | 'anime' | 'cartoon'
-  quality?: string
+  type: 'movie' | 'series' | 'cartoon'
+}
+
+export interface HomeSection {
+  name: string
+  items: SearchResult[]
+}
+
+export interface HomeResponse {
+  results: HomeSection[]
+  hasNext: boolean
 }
 
 export interface MediaInfo {
@@ -27,9 +29,18 @@ export interface MediaInfo {
   trailer?: string
   actors?: ActorData[]
   recommendations?: SearchResult[]
-  type: 'movie' | 'series'
-  episodes?: Episode[]
+  type: 'movie' | 'series' | 'cartoon'
+  episodes?: EpisodeInfo[]
   streamData?: any
+}
+
+export interface EpisodeInfo {
+  name: string
+  season?: number
+  episode?: number
+  posterUrl?: string
+  description?: string
+  streamData: any
 }
 
 export interface ActorData {
@@ -38,22 +49,17 @@ export interface ActorData {
   role?: string
 }
 
-export interface Episode {
-  name?: string
-  season?: number
-  episode?: number
-  posterUrl?: string
-  description?: string
-  streamData: any
-}
-
-export interface StreamLink {
+export interface StreamResult {
   name: string
   url: string
-  type: string
+  type: 'm3u8' | 'direct' | 'mpd' | 'extractor'
   quality?: number
   referer?: string
   headers?: Record<string, string>
-  key?: string
-  kid?: string
+}
+
+export interface ApiResponse<T = any> {
+  success: boolean
+  data?: T
+  error?: string
 }

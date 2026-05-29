@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio'
 import CryptoJS from 'crypto-js'
-import { fetchText, getBaseUrl, fixUrl } from './fetcher'
+import { http } from './utils/request'
+import { getBaseUrl, fixUrl } from './utils/helpers'
 
 export interface StreamResult {
   name: string
@@ -76,14 +77,14 @@ export async function hubcloudExtract(url: string, ref?: string): Promise<Stream
     const baseUrl = getBaseUrl(url)
     let href = url
     if (!url.includes('hubcloud.php')) {
-      const html = await fetchText(url)
+      const html = await http.get(url)
       const $ = cheerio.load(html)
       const raw = $('#download').attr('href') || ''
       href = raw.startsWith('http') ? raw : `${baseUrl}/${raw.replace(/^\//, '')}`
     }
     if (!href) return results
 
-    const html = await fetchText(href)
+    const html = await http.get(href)
     const $ = cheerio.load(html)
     const size = $('#size').text() || ''
     const header = $('div.card-header').text() || ''
@@ -127,7 +128,7 @@ export async function hubcloudExtract(url: string, ref?: string): Promise<Stream
 export async function gdflixExtract(url: string, _ref?: string): Promise<StreamResult[]> {
   const results: StreamResult[] = []
   try {
-    const html = await fetchText(url)
+    const html = await http.get(url)
     const $ = cheerio.load(html)
     const fileName = $('ul > li.list-group-item:contains(Name)').text().split('Name :')[1]?.trim() || ''
     const fileSize = $('ul > li.list-group-item:contains(Size)').text().split('Size :')[1]?.trim() || ''
@@ -153,7 +154,7 @@ export async function gdflixExtract(url: string, _ref?: string): Promise<StreamR
         linkPromises.push(
           (async () => {
             try {
-              const subHtml = await fetchText(fixUrl(link, url))
+              const subHtml = await http.get(fixUrl(link, url))
               const $$ = cheerio.load(subHtml)
               const btnPromises: Promise<void>[] = []
               $$('a.btn.btn-outline-info').each((_, btn) => {
@@ -161,7 +162,7 @@ export async function gdflixExtract(url: string, _ref?: string): Promise<StreamR
                 btnPromises.push(
                   (async () => {
                     try {
-                      const serverHtml = await fetchText(serverUrl)
+                      const serverHtml = await http.get(serverUrl)
                       const $$$ = cheerio.load(serverHtml)
                       $$$('div.mb-4 > a').each((_, src) => {
                         const source = $$$(src).attr('href') || ''
@@ -189,7 +190,7 @@ export async function gdflixExtract(url: string, _ref?: string): Promise<StreamR
         linkPromises.push(
           (async () => {
             try {
-              const goHtml = await fetchText(link)
+              const goHtml = await http.get(link)
               const $$$ = cheerio.load(goHtml)
               const gofilePromises: Promise<void>[] = []
               $$$('.row .row a').each((_, a) => {
@@ -228,7 +229,7 @@ export async function gofileExtract(url: string): Promise<StreamResult[]> {
     const token = accountJson?.data?.token
     if (!token) return results
 
-    const globalJs = await fetchText('https://gofile.io/dist/js/global.js')
+    const globalJs = await http.get('https://gofile.io/dist/js/global.js')
     const wt = globalJs.match(/appdata\.wt\s*=\s*['"]([^'"]+)['"]/)?.[1]
     if (!wt) return results
 
@@ -269,13 +270,13 @@ export async function driveseedExtract(url: string, ref?: string): Promise<Strea
     let html: string
 
     if (url.includes('r?key=')) {
-      html = await fetchText(url)
+      html = await http.get(url)
       const $0 = cheerio.load(html)
       const replacePath = $0('script').first().html()?.match(/replace\("([^"]*)"\)/)?.[1] || ''
       docUrl = `https://driveseed.org${replacePath}`
     }
 
-    html = await fetchText(docUrl)
+    html = await http.get(docUrl)
     const $ = cheerio.load(html)
     const qualityText = $('li.list-group-item').first().text() || ''
     const rawFileName = qualityText.replace('Name :', '').trim()
@@ -331,7 +332,7 @@ export async function driveseedExtract(url: string, ref?: string): Promise<Strea
         linkPromises.push(
           (async () => {
             try {
-              const cfHtml = await fetchText(`${baseUrl}${href}?type=1`)
+              const cfHtml = await http.get(`${baseUrl}${href}?type=1`)
               const $$ = cheerio.load(cfHtml)
               $$('a.btn-success').each((_, a) => {
                 const l = $$(a).attr('href') || ''
@@ -344,7 +345,7 @@ export async function driveseedExtract(url: string, ref?: string): Promise<Strea
         linkPromises.push(
           (async () => {
             try {
-              const rcHtml = await fetchText(`${baseUrl}${href}`)
+              const rcHtml = await http.get(`${baseUrl}${href}`)
               const $$ = cheerio.load(rcHtml)
               const l = $$('a.btn-success').first().attr('href') || ''
               if (l.startsWith('http')) results.push({ name: `${namePrefix} ResumeCloud ${labelExtras}`, url: l, type: 'direct', quality })
@@ -363,7 +364,7 @@ export async function vidstackExtract(url: string): Promise<StreamResult[]> {
   try {
     const hash = url.split('#')[1]?.split('/')[1] || url.split('/').pop() || ''
     const baseUrl = getBaseUrl(url)
-    const encoded = (await fetchText(`${baseUrl}/api/v1/video?id=${hash}`, {
+    const encoded = (await http.get(`${baseUrl}/api/v1/video?id=${hash}`, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0' },
     })).trim()
 
@@ -396,7 +397,7 @@ export async function vidstackExtract(url: string): Promise<StreamResult[]> {
 export async function hubcdnExtract(url: string): Promise<StreamResult[]> {
   const results: StreamResult[] = []
   try {
-    const html = await fetchText(url)
+    const html = await http.get(url)
     const encoded = html.match(/r=([A-Za-z0-9+/=]+)/)?.[1]
     if (!encoded) return results
     const decoded = base64Decode(encoded)
@@ -411,7 +412,7 @@ export async function hubcdnExtract(url: string): Promise<StreamResult[]> {
 export async function hubcdnReurlExtract(url: string): Promise<StreamResult[]> {
   const results: StreamResult[] = []
   try {
-    const html = await fetchText(url)
+    const html = await http.get(url)
     const $ = cheerio.load(html)
     const scriptText = $('script:contains(var reurl)').html() || ''
     const encodedUrl = scriptText.match(/reurl\s*=\s*"([^"]+)"/)?.[1]
@@ -428,7 +429,7 @@ export async function hubcdnReurlExtract(url: string): Promise<StreamResult[]> {
 
 export async function hubdriveExtract(url: string): Promise<StreamResult[]> {
   try {
-    const html = await fetchText(url)
+    const html = await http.get(url)
     const $ = cheerio.load(html)
     const href = $('.btn.btn-primary.btn-user.btn-success1.m-1').attr('href') || ''
     if (!href) return []
@@ -442,7 +443,7 @@ export async function hubdriveExtract(url: string): Promise<StreamResult[]> {
 export async function hblinksExtract(url: string): Promise<StreamResult[]> {
   const results: StreamResult[] = []
   try {
-    const html = await fetchText(url)
+    const html = await http.get(url)
     const $ = cheerio.load(html)
     const links: string[] = []
     $('h3 a, h5 a, div.entry-content p a').each((_, el) => {
@@ -467,7 +468,7 @@ export async function pixelDrainExtract(url: string): Promise<StreamResult[]> {
 export async function genericExtract(url: string, referer?: string): Promise<StreamResult[]> {
   const results: StreamResult[] = []
   try {
-    const html = await fetchText(url, referer ? { referer } : {})
+    const html = await http.get(url, referer ? { referer } : {})
     const $ = cheerio.load(html)
 
     $('video > source').each((_, el) => {
@@ -503,7 +504,7 @@ export async function genericExtract(url: string, referer?: string): Promise<Str
 
 export async function hdhub4uRedirectExtract(url: string): Promise<string> {
   try {
-    const doc = await fetchText(url)
+    const doc = await http.get(url)
     const regex = /s\('o','([A-Za-z0-9+/=]+)'|ck\('_wp_http_\d+','([^']+)'\)/g
     let combined = ''
     let match
@@ -518,7 +519,7 @@ export async function hdhub4uRedirectExtract(url: string): Promise<string> {
     const data = base64Decode(json.data || '').trim()
     if (data && wphttp1) {
       try {
-        const body = await fetchText(`${wphttp1}?re=${data}`.trim())
+        const body = await http.get(`${wphttp1}?re=${data}`.trim())
         const directLink = cheerio.load(body).text().trim()
         return directLink || encodedurl || url
       } catch {

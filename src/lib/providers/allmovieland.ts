@@ -5,34 +5,12 @@ export const id = 'allmovieland'
 export const name = 'AllMovieLand'
 export const lang = 'hi'
 export const type = 'movie'
-export const baseUrl = 'https://allmovieland.you'
-
-let sessionCookies: Record<string, string> | null = null
-
-async function ensureSession(): Promise<Record<string, string>> {
-  if (!sessionCookies) {
-    const html = await fetchText(baseUrl)
-    const match = html.match(/PHPSESSID=([^;]+)/)
-    sessionCookies = match ? { PHPSESSID: match[1] } : {}
-  }
-  return sessionCookies
-}
+// Domain resolves to allmovieland.one (redirects from .you)
+export const baseUrl = 'https://allmovieland.one'
 
 async function querySearchApi(query: string) {
-  const cookies = await ensureSession()
-  const body = new URLSearchParams({
-    do: 'search',
-    subaction: 'search',
-    search_start: '0',
-    full_search: '0',
-    result_from: '1',
-    story: query,
-  })
-  return fetchText(`${baseUrl}/index.php?do=opensearch`, {
-    method: 'POST',
-    body,
+  return fetchText(`${baseUrl}/index.php?do=search&subaction=search&search_start=0&full_search=0&result_from=1&story=${encodeURIComponent(query)}`, {
     referer: `${baseUrl}/`,
-    cookies,
   })
 }
 
@@ -86,12 +64,12 @@ export async function mainPage(page: number = 1) {
     const $ = cheerio.load(html)
     const items = $('article.short-mid').map((_, el) => {
       const $el = $(el)
-      const title = $el.find('a > h3').text().trim()
-      const href = fixUrl($el.find('a').attr('href') || '', baseUrl)
-      const posterUrl = fixUrlNull($el.find('div.new-short__poster > a.new-short__poster--link > img').attr('data-src'), baseUrl)
+      const title = $el.find('a.new-short__title--link > h3.new-short__title').text().trim()
+      const href = $el.find('a.new-short__title--link').attr('href') || ''
+      const posterUrl = $el.find('img.new-short__poster--img').attr('data-src') || undefined
       const checkType = $el.find('span.new-short__cats').text()
-      const type = checkType.includes('series') ? 'series' : 'movie'
-      return { title, url: href, posterUrl, type }
+      const type = checkType.toLowerCase().includes('series') ? 'series' : 'movie'
+      return { title, url: href, posterUrl: posterUrl?.startsWith('http') ? posterUrl : fixUrl(posterUrl || '', baseUrl), type }
     }).get()
     results.push({ name: cat.name, items })
   }
@@ -104,12 +82,12 @@ export async function search(query: string, page: number = 1) {
   const $ = cheerio.load(html)
   return $('article.short-mid').map((_, el) => {
     const $el = $(el)
-    const title = $el.find('a > h3').text().trim()
-    const href = fixUrl($el.find('a').attr('href') || '', baseUrl)
-    const posterUrl = fixUrlNull($el.find('div.new-short__poster > a.new-short__poster--link > img').attr('data-src'), baseUrl)
+    const title = $el.find('a.new-short__title--link > h3.new-short__title').text().trim()
+    const href = $el.find('a.new-short__title--link').attr('href') || ''
+    const posterUrl = $el.find('img.new-short__poster--img').attr('data-src') || undefined
     const checkType = $el.find('span.new-short__cats').text()
-    const type = checkType.includes('series') ? 'series' : 'movie'
-    return { title, url: href, posterUrl, type }
+    const type = checkType.toLowerCase().includes('series') ? 'series' : 'movie'
+    return { title, url: href, posterUrl: posterUrl?.startsWith('http') ? posterUrl : fixUrl(posterUrl || '', baseUrl), type }
   }).get()
 }
 

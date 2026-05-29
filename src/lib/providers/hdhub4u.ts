@@ -71,10 +71,11 @@ export async function search(query: string, page: number = 1) {
   const data = await fetchJson<any>(url)
   return (data.hits || []).map((hit: any) => {
     const doc = hit.document
+    const permalink = doc.permalink || ''
     return {
-      title: doc.postTitle,
-      url: doc.permalink,
-      posterUrl: doc.postThumbnail || undefined,
+      title: doc.post_title || '',
+      url: permalink.startsWith('http') ? permalink : fixUrl(permalink, baseUrl),
+      posterUrl: doc.post_thumbnail || undefined,
       type: 'movie',
     }
   })

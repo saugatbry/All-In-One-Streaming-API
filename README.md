@@ -81,11 +81,11 @@ Get full metadata and episode/stream data for a title.
 
 | Param | Required | Description |
 |---|---|---|
-| `id` | yes | URL (or JSON-encoded data for animedekho) from search result |
+| `id` | yes | URL from search result (e.g. `/the-batman-2022/` or full URL) |
 | `provider` | yes | Provider ID |
 
 ```bash
-curl "https://your-app.vercel.app/api/info?id=https%3A%2F%2Fhdhub4u.rehab%2Fthe-batman-2022%2F&provider=hdhub4u"
+curl "https://your-app.vercel.app/api/info?id=%2Fthe-batman-2022%2F&provider=hdhub4u"
 ```
 ```json
 {
@@ -103,24 +103,24 @@ curl "https://your-app.vercel.app/api/info?id=https%3A%2F%2Fhdhub4u.rehab%2Fthe-
     "banner": "https://...",
     "cast": [{ "name": "Robert Pattinson", "image": "...", "role": "Bruce Wayne" }],
     "trailer": "https://www.youtube.com/watch?v=...",
-    "episodes": [{ "name": "Movie", "season": 1, "episode": 1, "id": "[\"https://...\",\"https://...\"]" }]
+    "episodes": [{ "name": "Movie", "season": 1, "episode": 1, "id": "YXJ...base64...X0=" }]
   }
 }
 ```
 
-For **series**, episodes have individual `id` values (JSON-encoded link data). For **animedekho**, the `id` is a JSON `Media` object.
+Episode `id` values are compact base64 strings — just pass them directly to `/api/watch`.
 
 ### GET /api/watch?id=&provider=xxx&type=movie
 Resolve stream URLs from an episode/movie ID.
 
 | Param | Required | Description |
 |---|---|---|
-| `id` | yes | The `episodes[].id` from `/api/info` |
+| `id` | yes | The base64-encoded `episodes[].id` from `/api/info` |
 | `provider` | yes | Provider ID |
 | `type` | no | `movie`, `series`, `anime` (default: `movie`) |
 
 ```bash
-curl "https://your-app.vercel.app/api/watch?id=%5B%22https...%22%5D&provider=hdhub4u"
+curl "https://your-app.vercel.app/api/watch?id=YXJ...base64...X0%3D&provider=hdhub4u"
 ```
 ```json
 {
@@ -146,11 +146,11 @@ curl https://your-app.vercel.app/api/providers
 # 2. Search hdhub4u for "batman"
 curl "https://your-app.vercel.app/api/search?q=batman&provider=hdhub4u"
 
-# 3. Get movie info (URL-encode the id)
-curl "https://your-app.vercel.app/api/info?id=https%3A%2F%2Fhdhub4u.rehab%2Fthe-batman-2022%2F&provider=hdhub4u"
+# 3. Get movie info (use the relative path from search as id)
+curl "https://your-app.vercel.app/api/info?id=%2Fthe-batman-2022%2F&provider=hdhub4u"
 
-# 4. Get stream (URL-encode the episodes[0].id)
-curl "https://your-app.vercel.app/api/watch?id=%5B%22https...%22%5D&provider=hdhub4u"
+# 4. Get stream (pass the base64 episode id directly)
+curl "https://your-app.vercel.app/api/watch?id=YXJ...base64...X0%3D&provider=hdhub4u"
 ```
 
 ```javascript

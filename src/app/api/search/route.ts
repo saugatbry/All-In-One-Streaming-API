@@ -1,25 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { search } from '@/lib/scraper/search'
+import { getProviderManifest } from '@/providers/registry'
+import { getProviderModule } from '@/providers/loader'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
+    const provider = searchParams.get('provider')
     const query = searchParams.get('q')
 
-    if (!query) {
-      return NextResponse.json(
-        { success: false, error: 'Query parameter "q" is required' },
-        { status: 400 }
-      )
-    }
+    if (!provider) return NextResponse.json({ success: false, error: '"provider" required' }, { status: 400 })
+    if (!query) return NextResponse.json({ success: false, error: '"q" (query) required' }, { status: 400 })
+    if (!getProviderManifest(provider)) return NextResponse.json({ success: false, error: `Unknown provider: ${provider}` }, { status: 404 })
 
-    const data = await search(query)
+    const mod = getProviderModule(provider)
+    if (!mod) return NextResponse.json({ success: false, error: 'Provider module not loaded' }, { status: 500 })
 
-    return NextResponse.json({ success: true, query, data })
+    const data = await mod.search(provider, query)
+    return NextResponse.json({ success: true, provider, query, data })
   } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message || 'Search failed' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: error.message || 'Failed' }, { status: 500 })
   }
 }

@@ -1,39 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getWatch } from '@/lib/scraper/watch'
+import { getProviderManifest } from '@/providers/registry'
+import { getProviderModule } from '@/providers/loader'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const dataParam = searchParams.get('data')
+    const provider = searchParams.get('provider')
+    const id = searchParams.get('id')
+    const type = searchParams.get('type') || 'movie'
 
-    if (!dataParam) {
-      return NextResponse.json(
-        { success: false, error: 'Parameter "data" (JSON-encoded stream data) is required' },
-        { status: 400 }
-      )
-    }
+    if (!provider) return NextResponse.json({ success: false, error: '"provider" required' }, { status: 400 })
+    if (!id) return NextResponse.json({ success: false, error: '"id" required' }, { status: 400 })
+    if (!getProviderManifest(provider)) return NextResponse.json({ success: false, error: `Unknown provider: ${provider}` }, { status: 404 })
 
-    let parsedData: any
-    try {
-      parsedData = JSON.parse(decodeURIComponent(dataParam))
-    } catch {
-      parsedData = dataParam
-    }
+    const mod = getProviderModule(provider)
+    if (!mod) return NextResponse.json({ success: false, error: 'Provider module not loaded' }, { status: 500 })
 
-    const streams = await getWatch(parsedData)
-    const stream = streams[0] || null
-
-    return NextResponse.json({
-      success: true,
-      stream: stream?.url || null,
-      referer: stream?.referer || null,
-      headers: stream?.headers || null,
-      sources: streams,
-    })
+    const data = await mod.watch(provider, type, id)
+    return NextResponse.json({ success: data.status === 'ok', data })
   } catch (error: any) {
-    return NextResponse.json(
-      { success: true, stream: null, sources: [], error: error.message || 'Failed to get stream' },
-      { status: 200 }
-    )
+    return NextResponse.json({ success: false, error: error.message || 'Failed' }, { status: 500 })
   }
 }

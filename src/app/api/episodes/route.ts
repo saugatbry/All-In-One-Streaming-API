@@ -1,37 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getInfo } from '@/lib/scraper/info'
+import { getProviderManifest } from '@/providers/registry'
+import { getProviderModule } from '@/providers/loader'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id') || searchParams.get('url')
+    const provider = searchParams.get('provider')
+    const id = searchParams.get('id')
 
-    if (!id) {
-      return NextResponse.json(
-        { success: false, error: 'Parameter "id" or "url" is required' },
-        { status: 400 }
-      )
-    }
+    if (!provider) return NextResponse.json({ success: false, error: '"provider" required' }, { status: 400 })
+    if (!id) return NextResponse.json({ success: false, error: '"id" required' }, { status: 400 })
+    if (!getProviderManifest(provider)) return NextResponse.json({ success: false, error: `Unknown provider: ${provider}` }, { status: 404 })
 
-    const data = await getInfo(id)
+    const mod = getProviderModule(provider)
+    if (!mod) return NextResponse.json({ success: false, error: 'Provider module not loaded' }, { status: 500 })
 
-    if (data.type === 'movie') {
-      return NextResponse.json({
-        success: true,
-        data: [{
-          name: 'Movie',
-          season: 1,
-          episode: 1,
-          streamData: data.streamData,
-        }],
-      })
-    }
-
-    return NextResponse.json({ success: true, data: data.episodes || [] })
+    const data = await mod.episodes(provider, id)
+    return NextResponse.json({ success: true, data })
   } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message || 'Failed to fetch episodes' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: error.message || 'Failed' }, { status: 500 })
   }
 }

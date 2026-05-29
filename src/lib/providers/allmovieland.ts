@@ -22,8 +22,7 @@ function extractJsonObject(script: string): string | null {
 }
 
 async function getDlPayload(link: string, refererUrl: string, playerDomain: string) {
-  const cookies = await ensureSession()
-  const html = await fetchText(link, { referer: refererUrl, cookies })
+  const html = await fetchText(link, { referer: refererUrl })
   const $ = cheerio.load(html)
   const scriptText = $('body > script:last-child').html() || ''
   const jsonStr = extractJsonObject(scriptText)

@@ -3,6 +3,7 @@ import cors from 'cors';
 import searchRoutes from './src/routes/search.js';
 import infoRoutes from './src/routes/info.js';
 import watchRoutes from './src/routes/watch.js';
+import animedekhoRoutes from './src/routes/animedekho.js';
 import desidubanimeRoutes from './src/routes/desidubanime.js';
 import hdhub4uRoutes from './src/routes/hdhub4u.js';
 
@@ -19,6 +20,12 @@ app.get('/', (req, res) => {
       search: '/api/search?q=<query>&provider=animedekho|desidubanime|hdhub4u',
       info: '/api/info?id=<slug>&provider=animedekho|desidubanime|hdhub4u',
       watch: '/api/watch?id=<base64ed-url-or-slug>&provider=animedekho|desidubanime|hdhub4u',
+      animedekho: {
+        home: '/api/animedekho/home',
+        search: '/api/animedekho/search?q=',
+        info: '/api/animedekho/info/:id',
+        watch: '/api/animedekho/watch/:id',
+      },
       desidubanime: {
         home: '/api/desidubanime/home',
         search: '/api/desidubanime/search?q=',
@@ -41,6 +48,7 @@ app.use('/api/info', infoRoutes);
 app.use('/api/watch', watchRoutes);
 
 // Provider-specific routes
+app.use('/api/animedekho', animedekhoRoutes);
 app.use('/api/desidubanime', desidubanimeRoutes);
 app.use('/api/hdhub4u', hdhub4uRoutes);
 

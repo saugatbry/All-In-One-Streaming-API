@@ -9,6 +9,29 @@ function toSlug(url) {
   return url.replace(/\/+$/, '').split('/').filter(Boolean).pop() || url;
 }
 
+// ========== HOME ==========
+
+export async function getHome() {
+  const html = await fetchPage(`${BASE_URL}/home/`);
+  const $ = cheerio.load(html);
+  const items = [];
+  const seen = new Set();
+
+  $('.swiper-slide article.post').each((_, el) => {
+    const $el = $(el);
+    const href = $el.find('a').first().attr('href');
+    if (!href || seen.has(href)) return;
+    seen.add(href);
+    const title = $el.find('h2.entry-title').text().trim();
+    const bgStyle = $el.find('div.bg').attr('style') || '';
+    const poster = bgStyle.match(/background-image:\s*url\(['"]?([^'")\s]+)['"]?\)/)?.[1] || '';
+    const slug = toSlug(href);
+    if (title && slug) items.push({ id: slug, title, type: 'anime', poster: poster || undefined });
+  });
+
+  return { success: true, results: items.slice(0, 30) };
+}
+
 // ========== SEARCH ==========
 
 export async function searchAnimeDekho(query) {
@@ -18,9 +41,9 @@ export async function searchAnimeDekho(query) {
   $('ul[data-results] article').each((_, el) => {
     const href = $(el).find('a.lnk-blk').attr('href');
     const title = $(el).find('h2.entry-title').text().trim();
-    let poster = $(el).find('div.img-wrap figure img').attr('src');
+    let poster = $(el).find('div.post-thumbnail figure img').attr('src');
     if (!poster || poster.includes('data:image')) {
-      poster = $(el).find('div.img-wrap figure img').attr('data-lazy-src');
+      poster = $(el).find('div.post-thumbnail figure img').attr('data-lazy-src');
     }
     if (href && title) {
       results.push({ provider: 'animedekho', id: toSlug(href), title, type: 'anime', poster: poster || undefined });
@@ -39,10 +62,16 @@ export async function infoAnimeDekho(id, page = 1) {
   const $ = cheerio.load(html);
 
   const title = ($('h1.entry-title').text().trim() || $('meta[property=og:title]').attr('content') || '')
-    .replace('Watch Online ', '').replace(' Movie in Hindi Dubbed Free', '').trim();
-  const poster = $('div.post-thumbnail figure img').attr('src') || undefined;
-  const plot = $('div.entry-content p').first().text().trim() || $('meta[name=twitter:description]').attr('content') || undefined;
-  const yearStr = $('span.year').text().trim() || $('meta[property=og:updated_time]').attr('content')?.split('-')[0];
+    .replace(/\s*[–\-|]\s*Watch Online\s*\|?\s*AnimeDekho\s*$/i, '')
+    .replace(/\s*\|\s*AnimeDekho\s*$/i, '')
+    .replace(/^Watch Online\s+/i, '')
+    .replace(/\s*Movie\s*\(Hindi Dubbed\)\s*–?\s*/i, '')
+    .replace(/\s*Movie in Hindi Dubbed Free/i, '')
+    .trim();
+  let poster = $('div.post-thumbnail figure img').attr('src') || $('meta[property=og:image]').attr('content') || undefined;
+  if (poster && poster.includes('AnimeDekho-Logo')) poster = undefined;
+  const plot = $('div.entry-content p').first().text().trim() || $('meta[property=og:description]').attr('content') || $('meta[name=twitter:description]').attr('content') || undefined;
+  const yearStr = $('span.year').first().text().trim() || $('meta[property=og:updated_time]').attr('content')?.split('-')[0];
   const year = yearStr ? parseInt(yearStr) : undefined;
   const seasonCount = $('div.seasons-bx').length;
   const hasSeasons = seasonCount > 0 || $('ul.seasons-lst li').length > 0;
